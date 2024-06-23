@@ -1,0 +1,42 @@
+body {
+  background-color: #f8f9fa;
+  font-family: Arial, sans-serif;
+}
+
+.navbar {
+  background-color: #ff8c00;
+}
+
+.navbar-brand, .navbar-nav .nav-link {
+  color: white !important;
+}
+
+.navbar-brand:hover, .navbar-nav .nav-link:hover {
+  color: #f0f0f0 !important;
+}
+
+.card {
+  border-radius: 10px;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.card-header {
+  background-color: #ff8c00;
+  color: white;
+  border-radius: 10px 10px 0 0;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.form-control, .btn {
+  border-radius: 10px;
+}
+
+.btn-primary {
+  background-color: #ff8c00;
+  border-color: #ff8c00;
+}
