@@ -1,24 +1,25 @@
 <template>
-  <div class="container mt-5">
-    <h2 class="mb-4">My Objects</h2>
-    <div v-if="objects.length" class="mt-4">
-      <div v-for="obj in objects" :key="obj.id" class="card mb-3">
-        <div class="card-body">
-          <p>INN: {{ obj.INN }}</p>
-          <p>RAL Color: {{ obj.RAL_color }}</p>
-          <p>Delivery Address: {{ obj.delivery_address }}</p>
-          <p>Status:
-            <b-form-select v-model="obj.status" @change="updateStatus(obj)">
-              <b-form-select-option value="in_progress">In Progress</b-form-select-option>
-              <b-form-select-option value="cancelled">Cancelled</b-form-select-option>
-              <b-form-select-option value="paid">Paid</b-form-select-option>
-            </b-form-select>
+  <div class="d-flex flex-column align-items-center justify-content-center vh-100">
+    <div class="object-list p-4 shadow">
+      <h2>Мои объекты</h2>
+      <div v-if="objects.length" class="d-flex flex-wrap justify-content-center">
+        <div v-for="(obj, index) in objects" :key="index" class="object-card m-2 p-2 shadow">
+          <p>ИНН: {{ obj.INN }}</p>
+          <p>Цвет RAL: {{ obj.RAL_color }}</p>
+          <p>Адрес доставки: {{ obj.delivery_address }}</p>
+          <p>Менеджер: {{ obj.manager ? obj.manager.name : 'Unknown' }}</p>
+          <p>Статус объекта:
+            <select v-model="obj.status" @change="updateStatus(obj)">
+              <option v-for="(label, value) in statusOptions" :key="value" :value="value">
+                {{ label }}
+              </option>
+            </select>
           </p>
         </div>
       </div>
-    </div>
-    <div v-else>
-      <p>No objects found.</p>
+      <div v-else>
+        <p>Нет закрепленных объектов</p>
+      </div>
     </div>
   </div>
 </template>
@@ -29,59 +30,73 @@ import axios from 'axios';
 export default {
   data() {
     return {
-      objects: []
+      objects: [],
+      statusOptions: {
+        'in_progress': 'В работе',
+        'cancelled': 'Отменен',
+        'paid': 'Оплачен'
+      }
     };
-  },
-  methods: {
-    async fetchObjects() {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:8000/api/objects/', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        this.objects = response.data;
-      } catch (error) {
-        console.error(error);
-        alert('Failed to fetch objects');
-      }
-    },
-    async updateStatus(obj) {
-      try {
-        const token = localStorage.getItem('token');
-        await axios.put(`http://localhost:8000/api/objects/${obj.id}/`, {
-          status: obj.status,
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        alert('Status updated successfully');
-      } catch (error) {
-        console.error(error);
-        alert('Failed to update status');
-      }
-    }
   },
   mounted() {
     this.fetchObjects();
+  },
+  methods: {
+    fetchObjects() {
+      const token = localStorage.getItem('token');
+      axios.get('http://localhost:8000/api/objects/', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      .then(response => {
+        this.objects = response.data;
+      })
+      .catch(error => {
+        console.error(error);
+      });
+    },
+    updateStatus(obj) {
+      const token = localStorage.getItem('token');
+      axios.patch(`http://localhost:8000/api/objects/${obj.id}/`, {
+        status: obj.status
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      .then(() => {
+        console.log('Status updated successfully');
+      })
+      .catch(error => {
+        console.error(error);
+      });
+    }
   }
-}
+};
 </script>
 
-<style>
-.card {
+<style scoped>
+.object-list {
+  max-width: 1200px;
   border-radius: 15px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  background-color: white;
 }
-
-.card-body {
-  display: flex;
-  flex-direction: column;
+.object-card {
+  border-radius: 15px;
+  background-color: white;
+  width: calc(33% - 20px);
+  margin: 10px;
+  box-sizing: border-box;
 }
-
-.container {
-  max-width: 600px;
+@media (max-width: 768px) {
+  .object-card {
+    width: calc(50% - 20px);
+  }
+}
+@media (max-width: 480px) {
+  .object-card {
+    width: calc(100% - 20px);
+  }
 }
 </style>

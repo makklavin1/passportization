@@ -4,7 +4,7 @@ body {
 }
 
 .navbar {
-  background-color: #ff8c00;
+  background-color: #f77707;
 }
 
 .navbar-brand, .navbar-nav .nav-link {
@@ -12,7 +12,7 @@ body {
 }
 
 .navbar-brand:hover, .navbar-nav .nav-link:hover {
-  color: #f0f0f0 !important;
+  color: #f77707 !important;
 }
 
 .card {
@@ -37,6 +37,6 @@ body {
 }
 
 .btn-primary {
-  background-color: #ff8c00;
-  border-color: #ff8c00;
+  background-color: #f77707;
+  border-color: #f77707;
 }

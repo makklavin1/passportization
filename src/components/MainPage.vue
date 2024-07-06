@@ -1,44 +1,45 @@
 <template>
-  <div class="container mt-5">
-    <h2 class="mb-4">Main Page</h2>
-    <b-card>
-      <b-form @submit.prevent="addObject">
-        <b-form-group label-for="inn">
-          <b-form-input id="inn" v-model="inn" placeholder="INN" required></b-form-input>
+  <div class="d-flex flex-column align-items-center justify-content-center vh-100 no-scroll">
+    <div class="input-box p-4 shadow">
+      <form @submit.prevent="handleSubmit">
+        <b-form-group class="mb-3">
+          <b-form-input v-model="inn" placeholder="Введите ИНН компании" />
         </b-form-group>
-        <b-form-group label-for="ralColor">
-          <b-form-input id="ralColor" v-model="ralColor" placeholder="RAL Color" required></b-form-input>
+        <b-form-group class="mb-3">
+          <b-form-input v-model="ralColor" placeholder="Введите цвет RAL (стена/стена,крыша/крыша)" />
         </b-form-group>
-        <b-form-group>
-          <b-form-checkbox v-model="wall">Wall</b-form-checkbox>
-          <b-form-checkbox v-model="roof">Roof</b-form-checkbox>
+        <b-form-group class="mb-3">
+          <b-form-checkbox v-model="wall">Стеновые панели</b-form-checkbox>
+          <b-form-checkbox v-model="roof">Кровельные панели</b-form-checkbox>
         </b-form-group>
-        <b-form-group label-for="deliveryAddress">
-          <b-form-input id="deliveryAddress" v-model="deliveryAddress" placeholder="Delivery Address" required></b-form-input>
+        <b-form-group class="mb-3">
+          <b-form-input v-model="deliveryAddress" placeholder="Введите адрес доставки" />
         </b-form-group>
-        <b-form-group label-for="volume">
-          <b-form-input id="volume" v-model="volume" type="number" placeholder="Volume" required></b-form-input>
+        <b-form-group class="mb-3">
+          <b-form-input v-model="volume" placeholder="Введите объем (стена/крыша)" />
         </b-form-group>
-        <b-button type="submit" variant="primary">Add Object</b-button>
-      </b-form>
-    </b-card>
-    <div v-if="similarObjects.length" class="mt-4">
-      <h3>Similar Objects</h3>
-      <div v-for="obj in similarObjects" :key="obj.id" class="card mb-3">
-        <div class="card-body">
+        <b-button type="submit" variant="primary" class="w-100">Проверить объект</b-button>
+      </form>
+    </div>
+
+    <b-modal v-model="showModal" title="Similar Objects Found" hide-footer size="xl">
+      <div class="d-flex flex-wrap justify-content-center">
+        <div v-for="(obj, index) in similarObjects" :key="index" class="object-card m-2 p-2 shadow">
           <p>INN: {{ obj.INN }}</p>
           <p>RAL Color: {{ obj.RAL_color }}</p>
           <p>Delivery Address: {{ obj.delivery_address }}</p>
-          <p>Manager: {{ obj.manager_name }}</p>
-          <p>Status: {{ obj.status }}</p>
+          <p>Manager: {{ obj.manager ? obj.manager.name : 'Unknown' }}</p>
+          <p>Status: {{ statusOptions[obj.status] }}</p>
         </div>
       </div>
-    </div>
+      <b-button @click="addAnyway" variant="danger" class="mt-3 w-100">Все равно добавить (убедитесь что все поля заполнены)</b-button>
+    </b-modal>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import { BFormGroup, BFormInput, BFormCheckbox, BButton, BModal } from 'bootstrap-vue-next';
 
 export default {
   data() {
@@ -49,39 +50,77 @@ export default {
       roof: false,
       deliveryAddress: '',
       volume: '',
-      similarObjects: []
+      showModal: false,
+      similarObjects: [],
+      statusOptions: {
+        'in_progress': 'В работе',
+        'cancelled': 'Отменен',
+        'paid': 'Оплачен'
+      }
     };
   },
+  components: {
+    BFormGroup,
+    BFormInput,
+    BFormCheckbox,
+    BButton,
+    BModal
+  },
   methods: {
-    async addObject() {
-      try {
-        const token = localStorage.getItem('token');
-        const manager = localStorage.getItem('username');
-        const response = await axios.post('http://localhost:8000/api/objects/', {
-          INN: this.inn,
-          RAL_color: this.ralColor,
-          wall: this.wall,
-          roof: this.roof,
-          delivery_address: this.deliveryAddress,
-          volume: this.volume,
-          manager: manager,
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.data.similar_objects && response.data.similar_objects.length) {
-          this.similarObjects = response.data.similar_objects;
-        } else {
-          this.similarObjects = [];
-          this.resetForm();
-          alert('Object added successfully');
+    handleSubmit() {
+      const token = localStorage.getItem('token');
+      const username = localStorage.getItem('username');
+      axios.post('http://localhost:8000/api/objects/', {
+        INN: this.inn,
+        RAL_color: this.ralColor,
+        wall: this.wall,
+        roof: this.roof,
+        delivery_address: this.deliveryAddress,
+        volume: this.volume,
+        manager: username
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      } catch (error) {
+      })
+      .then(response => {
+        if (response.data.similar_objects && response.data.similar_objects.length > 0) {
+          this.similarObjects = response.data.similar_objects;
+          this.showModal = true;
+        } else {
+          alert('Объект добавлен');
+          this.resetForm();
+        }
+      })
+      .catch(error => {
         console.error(error);
-        alert('Failed to add object');
-      }
+      });
+    },
+    addAnyway() {
+      const token = localStorage.getItem('token');
+      const username = localStorage.getItem('username');
+      axios.post('http://localhost:8000/api/objects/force_add/', {
+        INN: this.inn,
+        RAL_color: this.ralColor,
+        wall: this.wall,
+        roof: this.roof,
+        delivery_address: this.deliveryAddress,
+        volume: this.volume,
+        manager: username
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      .then(() => {
+        this.showModal = false;
+        this.similarObjects = [];
+        alert('Object added successfully');
+        this.resetForm();
+      })
+      .catch(error => {
+        console.error(error);
+      });
     },
     resetForm() {
       this.inn = '';
@@ -92,21 +131,38 @@ export default {
       this.volume = '';
     }
   }
-}
+};
 </script>
 
-<style>
-.card {
+<style scoped>
+.input-box {
+  width: 66.67%; /* 2/3 ширины экрана */
+  max-width: 800px;
   border-radius: 15px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  background-color: white;
 }
-
-.card-body {
-  display: flex;
-  flex-direction: column;
+.object-card {
+  border-radius: 15px;
+  background-color: white;
+  width: calc(33% - 20px);
+  margin: 10px;
+  box-sizing: border-box;
 }
-
-.container {
-  max-width: 600px;
+.no-scroll {
+  overflow-y: hidden;
+}
+@media (max-width: 768px) {
+  .object-card {
+    width: calc(50% - 20px);
+  }
+}
+@media (max-width: 480px) {
+  .object-card {
+    width: calc(100% - 20px);
+  }
+}
+html, body {
+  height: 100%;
+  overflow: hidden; /* Предотвращение скроллинга */
 }
 </style>
